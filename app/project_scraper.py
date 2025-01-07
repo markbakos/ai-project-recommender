@@ -27,15 +27,20 @@ class ProjectScraper:
         }
         self.base_url = "https://api.github.com"
 
-    def search_projects(self, tags: List[str], min_stars: int = 10) -> List[Project]:
+    def search_projects(self, tags: List[str], min_stars: int = 10, max_stars: int = 100) -> List[Project]:
         """Search projects based of tags/topics and returns List of Projects"""
 
-        query = f"stars:>={min_stars} " + " ".join(f"topic:{tag}" for tag in tags)
+        query = (f"stars:{min_stars}..{max_stars} "
+                 + " ".join(f"topic:{tag}" for tag in tags)
+                 + " in:readme in:description"
+                 )
+
         url = f"{self.base_url}/search/repositories"
 
         params = {
             'q': query,
             'sort': 'stars',
+            'order': 'desc',
             'per_page': 100
         }
 
@@ -44,6 +49,13 @@ class ProjectScraper:
 
         projects = []
         for item in response.json()['items']:
+            name = item['name'].lower()
+            description = (item['description'] or "").lower()
+
+            skip_keywords = ['framework', 'library', 'awesome', 'tutorial', 'course', 'book']
+            if any(keyword in name or keyword in description for keyword in skip_keywords):
+                continue
+
             project = Project(
                 name=item['name'],
                 description=item['description'] or "",
