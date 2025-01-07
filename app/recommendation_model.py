@@ -1,18 +1,45 @@
+import random
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List
 import pickle
 from project_scraper import Project, ProjectScraper
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from collections import deque
 
+
+class DQNetwork(nn.Module):
+    def __init__(self, input_dim):
+        super(DQNetwork, self).__init__()
+        self.network = nn.Sequential(
+            nn.Linear(input_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1)
+        )
+
+    def forward(self, x):
+        return self.network(x)
 
 class Recommender:
-    def __init__(self, learning_rate: float = 0.01, feature_dim: int = 100):
+    def __init__(self, learning_rate: float = 0.001, feature_dim: int = 100):
         self.learning_rate = learning_rate
         self.feature_dim = feature_dim
         self.vectorizer = TfidfVectorizer(max_features=feature_dim)
-        self.weights = None
         self.project_features = {}
         self.exploration_rate = 0.1
+        self.memory = deque(maxlen=1000)
+        self.batch_size = 32
+        self.gamma = 0.95
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.dqn = None
+        self.target_dqn = None
+        self.optimizer = None
+        self.criterion = nn.MSELoss()
 
     def _extract_features(self, project: Project):
         """Extract features from a project using TF-IDF"""
@@ -20,9 +47,12 @@ class Recommender:
 
         if not self.project_features:
             features = self.vectorizer.fit_transform([text])
-            if self.weights is None:
+            if self.dqn is None:
                 actual_dim = features.shape[1]
-                self.weights = np.zeros(actual_dim)
+                self.dqn = DQNetwork(actual_dim).to(self.device)
+                self.target_dqn = DQNetwork(actual_dim).to(self.device)
+                self.target_dqn.load_state_dict(self.dqn.state_dict())
+                self.optimizer = optim.Adam(self.dqn.parameters(), lr=self.learning_rate)
         else:
             features = self.vectorizer.transform([text])
 
@@ -38,11 +68,12 @@ class Recommender:
     def get_project_score(self, project_id: str) -> float:
         """Calculate project score"""
         features = self.project_features[project_id]
-        score = np.dot(features, self.weights)
-        return score
+        state = torch.FloatTensor(features).to(self.device)
+        with torch.no_grad():
+            return self.dqn(state).item()
 
     def recommend_projects(self, projects: List[Project], n: int = 3) -> List[Project]:
-        """Recommend projects using epsilon greedy strategy"""
+        """Recommend projects using epsilon greedy strategy with DQN"""
         for project in projects:
             self.add_project(project)
 
@@ -69,18 +100,35 @@ class Recommender:
         reward = reward_map[feedback.lower()]
 
         project_id = project.url
-        features = self.project_features[project_id]
+        state = self.project_features[project_id]
 
-        predicted_reward = np.dot(features, self.weights)
-        error = reward - predicted_reward
-        self.weights += self.learning_rate * error * features
+        self.memory.append((state, reward))
+
+        if len(self.memory) >= self.batch_size:
+            batch = random.sample(self.memory, self.batch_size)
+            states = torch.FloatTensor([exp[0] for exp in batch]).to(self.device)
+            rewards = torch.FloatTensor([exp[1] for exp in batch]).to(self.device)
+
+            current_q_values = self.dqn(states)
+
+            with torch.no_grad():
+                target_q_values = rewards.unsqueeze(1) + self.gamma * self.target_dqn(states)
+
+            loss = self.criterion(current_q_values, target_q_values)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+            if np.random.random() < 0.1:
+                self.target_dqn.load_state_dict(self.dqn.state_dict())
 
         self.exploration_rate *= 0.995
+
 
     def save_model(self, filepath: str):
         """Save the model to a file."""
         model_data = {
-            'weights': self.weights,
+            'dqn_state_dict': self.dqn.state_dict(),
             'vectorizer': self.vectorizer,
             'project_features': self.project_features,
             'exploration_rate': self.exploration_rate
@@ -95,10 +143,19 @@ class Recommender:
             model_data = pickle.load(f)
 
         recommender = cls()
-        recommender.weights = model_data['weights']
         recommender.vectorizer = model_data['vectorizer']
         recommender.project_features = model_data['project_features']
         recommender.exploration_rate = model_data['exploration_rate']
+
+        if recommender.project_features:
+            first_feature = next(iter(recommender.project_features.values()))
+            input_dim = len(first_feature)
+            recommender.dqn = DQNetwork(input_dim).to(recommender.device)
+            recommender.target_dqn = DQNetwork(input_dim).to(recommender.device)
+            recommender.dqn.load_state_dict(model_data['dqn_state_dict'])
+            recommender.target_dqn.load_state_dict(model_data['dqn_state_dict'])
+            recommender.optimizer = optim.Adam(recommender.dqn.parameters(), lr=recommender.learning_rate)
+
         return recommender
 
 
