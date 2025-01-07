@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List
 import pickle
-from project_scraper import Project, ProjectScraper
+from .project_scraper import Project, ProjectScraper
 import torch
 import torch.nn as nn
 import torch.optim as optim
