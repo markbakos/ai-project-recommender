@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from .project_scraper import ProjectScraper
@@ -6,6 +7,14 @@ from .recommendation_model import Recommender
 from datetime import datetime
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 scraper = ProjectScraper()
 recommender = Recommender()
@@ -31,14 +40,14 @@ async def root():
 
 
 @app.get("/recommend/", response_model=List[ProjectResponse])
-async def get_recommendations(tags: str):
+async def get_recommendations(tags: str, min_stars: int, max_stars: int):
     """
     Get project recommendations based on tags.
     Tags should be comma-separated, e.g. 'python,machine-learning'
     """
     try:
         tag_list = [tag.strip() for tag in tags.split(",")]
-        projects = scraper.search_projects(tag_list)
+        projects = scraper.search_projects(tag_list, min_stars, max_stars)
 
         recommended_projects = recommender.recommend_projects(projects, n=3)
 
