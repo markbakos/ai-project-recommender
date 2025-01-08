@@ -13,7 +13,8 @@ export const Recommender = () => {
     const [currentProjects, setCurrentProjects] = useState<Project[]>([])
     const [shownProject, setShownProject] = useState<Project>()
     const [currentIndex, setCurrentIndex] = useState(0)
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false)
+    const [isCurrentStarred, setIsCurrentStarred] = useState(false);
 
 
     useEffect(() => {
@@ -68,8 +69,8 @@ export const Recommender = () => {
             handleSaving()
             fetchRecommendation()
             setLoading(false)
-
         }
+        setIsCurrentStarred(false)
     }
 
     const handleFeedback = async (feedback:string) => {
@@ -111,6 +112,20 @@ export const Recommender = () => {
         catch (e) {
             console.error("error: ", e)
         }
+    }
+
+    const handleStarring = () => {
+        if (!shownProject?.url) return
+
+        const starredProjects = JSON.parse(localStorage.getItem("starred_projects") || "[]")
+        const isAlreadyStarred = starredProjects.some((project: Project) => project.url === shownProject.url)
+
+        if (!isAlreadyStarred) {
+            starredProjects.push(shownProject)
+
+            localStorage.setItem("starred_projects", JSON.stringify(starredProjects))
+        }
+        setIsCurrentStarred(true)
     }
 
     return (
@@ -195,10 +210,16 @@ export const Recommender = () => {
                         whileHover={{scale: 1.1}}
                         whileTap={{scale: 0.9}}
                         className="p-3 bg-white rounded-full text-white shadow-lg"
-                        onClick={() => handleFeedback("dislike")}
+                        onClick={handleStarring}
                         title="Save project"
                     >
-                        <Star className="w-8 h-8 text-yellow-500 hover:fill-yellow-500 transition"/>
+                        <motion.div
+                            initial={false}
+                            animate={isCurrentStarred ? {scale: [1, 1.2, 1], rotate: [0, 15, -15, 0]} : {}}
+                            transition={{duration: 0.5}}
+                        >
+                            <Star className={`w-8 h-8 text-yellow-500 ${isCurrentStarred ? "fill-yellow-500" : ""}`}/>
+                        </motion.div>
                     </motion.button>
                 </div>
             </div>
