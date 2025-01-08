@@ -47,7 +47,7 @@ export const Dashboard = () => {
                         transition={{duration: 0.5, delay: 0.3}}
                     >
                         <Link
-                            to="/"
+                            to="/recommender"
                             className="bg-white bg-opacity-10 rounded-lg p-6 text-white hover:bg-opacity-20 transition-all duration-300 flex flex-col items-center justify-center text-center"
                         >
                             <motion.button

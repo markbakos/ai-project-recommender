@@ -2,3 +2,4 @@
 .idea
 .env
 /app/recommender_model.pkl
+/recommender_model.pkl

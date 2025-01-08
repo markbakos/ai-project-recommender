@@ -57,7 +57,7 @@ async def get_recommendations(tags: str, min_stars: int, max_stars: int):
 
 
 @app.post("/feedback/")
-async def submit_feedback(feedback_request: FeedbackRequest):
+async def submit_feedback(feedback_request: FeedbackRequest, tags: str, min_stars: int, max_stars: int):
     """
     Submit feedback for a project to improve recommendations.
     Feedback should be one of: 'like', 'dislike', 'maybe'
@@ -69,7 +69,9 @@ async def submit_feedback(feedback_request: FeedbackRequest):
                 detail="Feedback must be one of: 'like', 'dislike', 'maybe'"
             )
 
-        projects = scraper.search_projects(['python'])
+        tag_list = [tag.strip() for tag in tags.split(",")]
+        projects = scraper.search_projects(tag_list, min_stars, max_stars)
+
         project = next(
             (p for p in projects if p.url == feedback_request.project_url),
             None
@@ -78,7 +80,7 @@ async def submit_feedback(feedback_request: FeedbackRequest):
         if not project:
             raise HTTPException(
                 status_code=404,
-                detail="Project not found"
+                detail=f"Project not found with URL: {feedback_request.project_url}"
             )
 
         recommender.update_model(project, feedback_request.feedback)
