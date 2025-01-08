@@ -1,5 +1,6 @@
 import {motion} from "framer-motion"
 import { ArrowRight } from "lucide-react"
+import {Link} from "react-router-dom";
 
 export const Home = () => {
     return (
@@ -30,15 +31,17 @@ export const Home = () => {
                     >
                         Discover inspiring project ideas tailored to your interests with Reinforced Learning powered recommendation system.
                     </motion.p>
-                    <motion.button
-                        className="px-6 py-3 bg-purple-600 text-white rounded-full font-semibold shadow-lg hover:bg-purple-700 transition-colors duration-300 flex items-center justify-center group"
-                        whileHover={{scale: 1.05}}
-                        whileTap={{scale: 0.95}}
-                    >
-                        Start now
-                        <ArrowRight
-                            className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300"/>
-                    </motion.button>
+                    <Link to="/dashboard" >
+                        <motion.button
+                            className="px-6 py-3 bg-purple-600 text-white rounded-full font-semibold shadow-lg hover:bg-purple-700 transition-colors duration-300 flex items-center justify-center group"
+                            whileHover={{scale: 1.05}}
+                            whileTap={{scale: 0.95}}
+                        >
+                            Start now
+                            <ArrowRight
+                                className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300"/>
+                        </motion.button>
+                    </Link>
                 </motion.div>
                 <motion.div
                     className="w-64 h-64 sm:w-96 sm:h-64"
