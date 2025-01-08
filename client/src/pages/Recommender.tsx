@@ -31,6 +31,7 @@ export const Recommender = () => {
 
     useEffect(() => {
         if (isInitialized || !userPreferences) return
+        handleLoading()
         fetchRecommendation()
         setIsInitialized(true)
     }, [userPreferences, serverURL])
@@ -97,6 +98,15 @@ export const Recommender = () => {
     const handleSaving = async () => {
         try {
             axios.post(`${serverURL}/save-model/`)
+        }
+        catch (e) {
+            console.error("error: ", e)
+        }
+    }
+
+    const handleLoading = async () => {
+        try {
+            axios.post(`${serverURL}/load-model/`)
         }
         catch (e) {
             console.error("error: ", e)
