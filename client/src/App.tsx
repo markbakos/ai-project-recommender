@@ -3,6 +3,7 @@ import {Home} from "./pages/Home.tsx";
 import {Dashboard} from "./pages/Dashboard.tsx";
 import {Recommender} from "./pages/Recommender.tsx";
 import {Preferences} from "./pages/Preferences.tsx";
+import {Starred} from "./pages/Starred.tsx";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/recommender" element={<Recommender />} />
               <Route path="/preferences" element={<Preferences />} />
+              <Route path="/starred" element={<Starred />} />
           </Routes>
         </div>
       </Router>
