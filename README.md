@@ -98,10 +98,6 @@ Or you can also use the deployed website https://findproject.onrender.com/
   uvicorn app.server:app
 ```
 
-4. **Include dataset**
-
-Place your dataset into the `app/data/` folder. Make sure it is called `complete_ufc_data.csv`
-
 5. **Open the app in your browser**<br>
 
 Navigate to [http://localhost:5173](http://localhost:5173) or the address provided in your terminal to use the app.
